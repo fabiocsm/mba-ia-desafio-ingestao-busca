@@ -75,7 +75,8 @@ specs/002-grounded-search/
 └── checklists/requirements.md
 ```
 
-`tasks.md` será gerado por `$speckit-tasks` após este planejamento.
+`tasks.md` gerado; execução e evidências em
+[plans/validacao.md](../../plans/validacao.md), seção 002.
 
 ### Código previsto na raiz
 
@@ -95,7 +96,8 @@ tests/
 
 Atualizar `.env.example`/README com configuração e uso programático e registrar execuções
 reais em `plans/validacao.md` durante a implementação. Preservar pins, PDF e Compose.
-Esta fase produz documentação; código e testes serão alterados após tarefas/análise.
+Planejamento preservado como referência do desenho; código e testes implementados
+conforme tarefas e evidências da seção 002 do relatório de validação.
 
 ## Fase 0 — Pesquisa
 
@@ -233,3 +235,13 @@ na 001 não comprova fundamentação de respostas.
 
 Não há decisão técnica em aberto. Validações reais são trabalho futuro. O planejamento
 termina após a Fase 1; seguir com tarefas, análise, implementação e convergência.
+
+
+## Estado da execução (2026-10-16)
+
+Desenho implementado sem alteração dos pins/modelos/contratos. Consulta real confirmou
+alias `gpt-6-luna`, finish_reason stop e transporte Chat Completions. Preflight PGVector
+com engine de leitura funcionou sem DDL/DML; destinos ausente/vazio e incompatibilidades
+rejeitados antes da API. Bateria positiva/negativa/controlada e persistência aprovadas.
+61 testes isolados e verificadores adotados aprovados. Resultados completos e limites
+em `plans/validacao.md`; o chat interativo/entrega global permanecem na 003.

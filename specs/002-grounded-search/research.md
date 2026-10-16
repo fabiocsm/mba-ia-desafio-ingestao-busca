@@ -149,3 +149,13 @@ alterar defaults antigos quebraria ingestão; hierarquias de repositórios são 
 Não há decisão técnica sem resolução. Integração real, proteção de leitura contra
 PostgreSQL, regressão e validação factual ocorrerão após tarefas/análise/implementação.
 Nenhuma resposta real é declarada aprovada nesta pesquisa; bloqueios serão registrados.
+
+
+## Confirmação na implementação (2026-10-16)
+
+Fontes oficiais acima reconfirmadas. Instalação manteve todos os pins; teste com
+httpx.MockTransport verificou o payload do SDK real, uma chamada de embeddings e uma
+de Chat Completions, parâmetros de geração e fechamento. Execução real confirmou
+acesso e alias devolvido `gpt-6-luna`, finish_reason stop. Preflight protegido PGVector
+observou somente SELECTs e transaction_read_only=on. Baterias e persistência passaram;
+veja `plans/validacao.md`, seção 002. Não se presume gratuidade nem qualidade universal.

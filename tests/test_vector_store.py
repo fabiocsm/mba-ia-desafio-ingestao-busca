@@ -208,3 +208,120 @@ class PersistTests(unittest.TestCase):
         self.result.all.return_value.insert(0, {'id': 'id-2', 'document': 'Outro',
                                              'cmetadata': other.metadata, 'dimensions': 2})
         self.assertEqual(persist_chunks(self.target, [self.chunk, other], self.vector * 2), 2)
+
+
+class SearchStoreTests(unittest.TestCase):
+    def setUp(self):
+        self.settings = settings()
+        self.engine = MagicMock()
+        self.connection = self.engine.connect.return_value.__enter__.return_value
+        self.factory = MagicMock()
+        self.embeddings = MagicMock()
+        self.expected = manifest()
+
+    def rows(self, *, extension=True, schema=True, collection=True,
+             persisted='default', count=3, dimensions=True, vector_type='vector'):
+        values = []
+        for value, method in (
+            (extension, 'scalar_one'), (schema, 'scalar_one'),
+            ({'uuid': 'collection-uuid', 'cmetadata': self.expected
+              if persisted == 'default' else persisted} if collection else None,
+             'mapping'),
+            (vector_type, 'scalar_one_or_none'),
+            ({'count': count, 'invalid_dimensions': 0 if dimensions else 1},
+             'aggregate'),
+        ):
+            result = MagicMock()
+            if method == 'mapping':
+                result.mappings.return_value.one_or_none.return_value = value
+            elif method == 'aggregate':
+                result.mappings.return_value.one.return_value = value
+            else:
+                getattr(result, method).return_value = value
+            values.append(result)
+        self.connection.execute.side_effect = values
+
+    @contextmanager
+    def opened(self):
+        from src.vector_store import open_search_store
+        with patch('src.vector_store.create_engine', return_value=self.engine) as make:
+            with open_search_store(self.settings, self.embeddings,
+                                   store_factory=self.factory) as target:
+                yield target, make
+
+    def test_read_only_preflight_and_factory_options(self):
+        self.rows()
+        with self.opened() as (target, make):
+            self.assertEqual(target.collection_id, 'collection-uuid')
+            options = make.call_args.kwargs
+            self.assertIn('default_transaction_read_only=on',
+                          options['connect_args']['options'])
+            self.assertIn('statement_timeout=30000', options['connect_args']['options'])
+            self.assertIn('lock_timeout=5000', options['connect_args']['options'])
+            self.assertEqual(options['pool_timeout'], 10)
+            self.assertEqual(options['connect_args']['connect_timeout'], 10)
+            opts = self.factory.call_args.kwargs
+            self.assertIsNone(opts['embedding_length'])
+            self.assertFalse(opts['create_extension'])
+            self.assertFalse(opts['pre_delete_collection'])
+            self.assertTrue(opts['use_jsonb'])
+            self.assertNotIn('collection_metadata', opts)
+            calls = self.connection.execute.call_args_list
+            self.assertTrue(all(str(call.args[0]).lstrip().startswith('SELECT')
+                                for call in calls))
+            self.assertEqual(calls[2].args[1], {'name': self.settings.collection_name})
+            self.assertEqual(calls[-1].args[1]['collection_id'], 'collection-uuid')
+        self.engine.dispose.assert_called_once()
+        self.embeddings.embed_query.assert_not_called()
+
+    def test_invalid_base_before_factory(self):
+        for change in ({'extension': False}, {'schema': False},
+                       {'collection': False}, {'count': 0},
+                       {'persisted': None}, {'dimensions': False},
+                       {'vector_type': 'vector(999)'}):
+            self.rows(**change)
+            with self.subTest(change=change), self.assertRaises(StorageError):
+                with self.opened():
+                    pass
+        self.factory.assert_not_called()
+        self.embeddings.embed_query.assert_not_called()
+        self.assertEqual(self.engine.dispose.call_count, 7)
+
+    def test_creation_race_and_timeout_are_safe_and_dispose(self):
+        from sqlalchemy.exc import OperationalError, TimeoutError
+        for error in (OperationalError('SQL sentinel', {}, Exception('password')),
+                      TimeoutError('sentinel')):
+            self.rows()
+            self.factory.side_effect = error
+            with self.assertRaises(StorageError) as caught:
+                with self.opened():
+                    pass
+            self.assertNotIn('sentinel', str(caught.exception))
+            self.assertTrue(caught.exception.__suppress_context__)
+        self.assertEqual(self.engine.dispose.call_count, 2)
+
+    def test_ingestion_engine_stays_writable(self):
+        with patch('src.vector_store.create_engine') as create:
+            connection = create.return_value.connect.return_value.__enter__.return_value
+            connection.execute.return_value.scalar_one_or_none.return_value = None
+            connection.execute.return_value.mappings.return_value.one.return_value = {
+                'uuid': 'id', 'cmetadata': self.expected}
+            with open_vector_store(self.settings, self.embeddings, self.expected,
+                                   store_factory=self.factory):
+                pass
+        self.assertNotIn('read_only', create.call_args.kwargs['connect_args']['options'])
+
+    def test_manifest_matrix_rejected_before_services(self):
+        variants = [None, {}, {'legacy': True}]
+        for key, value in (('schema_version', True), ('provider', 'google'),
+                           ('document_sha256', 'invalid'), ('pipeline', {}),
+                           ('embedding_model', 'other-same-dimensions'),
+                           ('embedding_dimensions', 512)):
+            variants.append({**self.expected, key: value})
+        for variant in variants:
+            self.rows(persisted=variant)
+            with self.subTest(variant=variant), self.assertRaises(StorageError):
+                with self.opened():
+                    pass
+        self.factory.assert_not_called()
+        self.embeddings.embed_query.assert_not_called()

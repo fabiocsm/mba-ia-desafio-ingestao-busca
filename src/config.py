@@ -8,7 +8,7 @@ from pathlib import Path
 
 from dotenv import dotenv_values
 import httpx
-from langchain_openai import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ArgumentError
 
@@ -45,11 +45,13 @@ class Settings:
     database_url: str = field(repr=False)
     collection_name: str
     pdf_path: Path | None = None
+    chat_model: str | None = None
 
 
 def load_settings(
     *,
     ingestion: bool = True,
+    require_chat: bool = False,
     root: Path | None = None,
     environ: Mapping[str, str] | None = None,
 ) -> Settings:
@@ -80,7 +82,9 @@ def load_settings(
                 or not parsed.database):
             raise ValueError
         # Força a validação da porta sem imprimir a URL.
-        _ = parsed.port
+        port = parsed.port
+        if port is not None and not 1 <= port <= 65535:
+            raise ValueError
     except (ArgumentError, ValueError):
         raise ConfigurationError(
             'DATABASE_URL inválida; use postgresql+psycopg:// '
@@ -97,7 +101,9 @@ def load_settings(
             'revise .env ou .env.local.',
         ) from None
     pdf_path = Path(required('PDF_PATH')) if ingestion else None
-    return Settings(api_key, model, dimensions, url, collection, pdf_path)
+    chat_model = required('OPENAI_CHAT_MODEL') if require_chat else None
+    return Settings(api_key, model, dimensions, url, collection, pdf_path,
+                    chat_model)
 
 
 def create_embeddings(
@@ -125,6 +131,47 @@ def embedding_session(settings: Settings) -> Iterator[OpenAIEmbeddings]:
     try:
         with httpx.Client(timeout=60) as sync_http:
             yield create_embeddings(
+                settings, http_client=sync_http, http_async_client=async_http,
+            )
+    finally:
+        asyncio.run(async_http.aclose())
+
+
+
+def create_chat_model(
+    settings: Settings,
+    *,
+    http_client: httpx.Client | None = None,
+    http_async_client: httpx.AsyncClient | None = None,
+) -> ChatOpenAI:
+    """Constrói geração sem aquecimento nem validação paga de acesso."""
+    if (not isinstance(settings.chat_model, str)
+            or not settings.chat_model.strip()):
+        raise ConfigurationError(
+            'OPENAI_CHAT_MODEL obrigatória para consulta; '
+            'configure o ambiente.',
+        )
+    return ChatOpenAI(
+        api_key=settings.api_key,
+        model=settings.chat_model,
+        reasoning_effort='low',
+        temperature=None,
+        use_responses_api=False,
+        max_completion_tokens=2048,
+        timeout=60,
+        max_retries=0,
+        http_client=http_client,
+        http_async_client=http_async_client,
+    )
+
+
+@contextmanager
+def chat_session(settings: Settings) -> Iterator[ChatOpenAI]:
+    """Fecha os dois transportes, inclusive em construção parcial."""
+    async_http = httpx.AsyncClient(timeout=60)
+    try:
+        with httpx.Client(timeout=60) as sync_http:
+            yield create_chat_model(
                 settings, http_client=sync_http, http_async_client=async_http,
             )
     finally:

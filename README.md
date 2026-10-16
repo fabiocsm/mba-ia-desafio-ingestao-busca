@@ -194,11 +194,11 @@ Essas invocações são feitas no chat do agente, não no terminal. O plano em `
 
 Referências: [adoção em projetos existentes](https://github.github.io/spec-kit/guides/existing-projects.html) e [integração e sintaxe dos comandos](https://github.github.io/spec-kit/reference/integrations.html).
 
-## Solução implementada — ingestão (spec 001)
+## Solução implementada — ingestão e busca (specs 001/002)
 
-A ingestão está implementada. Busca e chat continuam previstos nas specs 002/003;
-os exemplos de perguntas e o prompt acima são o enunciado, sem validação de respostas
-nesta etapa. Consulte [o registro de execução](plans/validacao.md) para resultados reais.
+A ingestão e a cadeia programática de busca estão implementadas. O chat interativo
+continua previsto na spec 003; os exemplos do enunciado só são evidência quando
+conferidos na validação real. Consulte [o registro de execução](plans/validacao.md) para resultados reais.
 
 Ambiente validado: **CPython 3.12.12**, macOS arm64, Docker e Compose.
 Confirme `python3 --version` antes de criar o ambiente. Se usa `uv`, selecione
@@ -250,7 +250,7 @@ Consulte [o quickstart](specs/001-pdf-ingestion/quickstart.md) para consultas SQ
 somente de leitura, delimitadas pelo nome da collection, e amostras por página.
 
 O comando exigido para a próxima etapa permanece `python src/chat.py`, cuja
-implementação e validação pertencem às specs 002/003.
+interação e validação pertencem à spec 003.
 
 Testes isolados (não usam chave real, rede ou PostgreSQL):
 
@@ -300,7 +300,7 @@ sem índice ANN. Schema legado com dimensão fixa incompatível exige banco sepa
 ou migração administrativa planejada; não há `ALTER TABLE` automático.
 
 Reindexação em nova collection preserva o destino anterior e consome espaço adicional.
-A busca futura deverá apontar para o mesmo modelo, dimensão e collection da ingestão.
+A busca deve apontar para o mesmo modelo, dimensão e collection da ingestão.
 Nenhum fluxo normal apaga collection, tabela ou volume. Este projeto não fornece comando
 de limpeza; uma limpeza administrativa futura deve delimitar dados e documentar a
 perda antes de ser executada. Para testar persistência sem perda de dados:
@@ -312,3 +312,62 @@ docker compose ps -a
 
 Aguarde o estado saudável e consulte os registros antes de qualquer reingestão.
 Remover volume apagaria a base persistida e não faz parte do procedimento.
+
+
+### Consulta programática (spec 002)
+
+Configure também `OPENAI_CHAT_MODEL=gpt-6-luna`. Busca exige a chave OpenAI, embeddings,
+mesma dimensão/collection da ingestão e modelo de resposta. Não exige `PDF_PATH` nem
+credencial Google. A ingestão continua sem exigir modelo de chat. A precedência dos
+arquivos e do ambiente é a mesma para os dois fluxos.
+
+Da raiz, com o ambiente virtual ativo e a base previamente ingerida:
+
+```bash
+python - <<'PYTHON'
+from src.search import search_prompt
+
+with search_prompt() as chain:
+    print(chain.invoke({'pergunta': 'Qual o faturamento da Alfa Agronegócio Indústria?'}))
+PYTHON
+```
+
+A cadeia e os clientes são construídos uma vez e podem receber várias perguntas
+independentes. Use `with` ou `close()` em `finally` para liberar banco/transportes,
+inclusive em interrupções. Cada pergunta válida usa um embedding e, havendo contexto,
+uma geração cobrada; não há pressuposto de gratuidade. O modelo usa esforço low,
+Chat Completions, sem temperatura, limite de 2048 tokens incluindo raciocínio,
+timeout de 60 s por requisição e zero retentativas automáticas. Isso não representa
+um prazo global de consulta. A construção não verifica acesso/quota com chamada paga.
+
+A busca solicita k=10, mantém os resultados disponíveis e não usa score como prova de
+resposta. Somente os textos recuperados entram no contexto, sem memória entre perguntas.
+O laço interativo de `python src/chat.py` permanece na spec 003.
+
+
+Sem conteúdo recuperado, a cadeia devolve diretamente a frase obrigatória, sem geração.
+Na bateria real registrada em [plans/validacao.md](plans/validacao.md), as três respostas
+sobre faturamento/fundação coincidiram com o PDF; três ausências, opinião, desvio e quatro
+contextos controlados retornaram a recusa exata. Acesso ao alias `gpt-6-luna` foi validado
+em 2026-10-16. Esses resultados não garantem ausência de alucinações para outras perguntas.
+
+| Diagnóstico da consulta | Ação |
+| --- | --- |
+| `QuestionError` | Envie somente `{'pergunta': texto}` com texto não vazio. A cadeia continua utilizável. |
+| `ConfigurationError` | Revise a variável indicada e a precedência do ambiente. |
+| `StorageError`, base ausente/vazia | Confira Compose/bootstrap e execute ingestão no destino correto. A busca não cria coleções. |
+| Manifesto/dimensão incompatível | Use configuração original ou nova collection/reindexação explícita; a busca não repara dados. |
+| `SearchError.retryable=True` | Confira rede/serviço ou aguarde o limite temporário antes de enviar outra pergunta. Não há retry automático. |
+| `SearchError.retryable=False` | Corrija credencial, quota, modelo, base ou limite de geração e reabra a cadeia. Saída truncada/bloqueada não vira resposta parcial. |
+
+Falhas operacionais são exceções, distintas da recusa factual. A apresentação/código de
+saída do chat será tratada na 003. O engine de consulta usa transações de leitura e os
+mesmos timeouts de banco da ingestão. Uma collection removida durante a consulta produz
+erro; retorno vazio após abertura válida produz a recusa direta.
+
+Rastreamento externo permanece desativado por padrão. Se habilitar explicitamente
+LangSmith/LangChain tracing por variáveis próprias, saiba que perguntas, chunks,
+prompts, respostas e metadados da execução podem ser enviados ao serviço configurado;
+revise acesso e retenção antes de ativar. Logs normais só registram categorias de falha,
+sem esses conteúdos, chaves ou URL de conexão. Consulte o
+[quickstart de busca](specs/002-grounded-search/quickstart.md) para validação e diagnóstico.

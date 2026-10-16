@@ -6,7 +6,7 @@
 
 **Created**: 2026-10-16
 
-**Status**: Tarefas geradas — pronta para análise de consistência; implementação e validação pendentes
+**Status**: Implementada, validada e convergida em 2026-10-16 — chat/entrega global na spec 003
 
 **Input**: User description: "Receber uma pergunta, selecionar até dez trechos relevantes do
 PDF já ingerido e responder somente com informações explícitas nesse contexto. Usar as

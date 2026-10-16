@@ -106,3 +106,107 @@ with patch('sqlalchemy.create_engine', side_effect=AssertionError('database')), 
                     pass
         sync.return_value.__exit__.assert_called_once()
         asynchronous.return_value.aclose.assert_awaited_once()
+
+
+class ChatConfigTests(unittest.TestCase):
+    def load(self, values=None, **kwargs):
+        with TemporaryDirectory() as directory:
+            return load_settings(root=Path(directory), environ={
+                **ENV, 'OPENAI_CHAT_MODEL': 'gpt-6-luna',
+                **(values or {}),
+            }, **kwargs)
+
+    def test_search_requires_chat_only_in_requested_flow(self):
+        self.assertIsNone(self.load(ingestion=False).chat_model)
+        config = self.load(ingestion=False, require_chat=True)
+        self.assertEqual(config.chat_model, 'gpt-6-luna')
+        self.assertIsNone(config.pdf_path)
+        for value in ('', '   '):
+            with self.assertRaisesRegex(ConfigurationError, 'OPENAI_CHAT_MODEL'):
+                self.load({'OPENAI_CHAT_MODEL': value}, ingestion=False,
+                          require_chat=True)
+            self.assertIsNone(self.load({'OPENAI_CHAT_MODEL': value}).chat_model)
+
+    def test_chat_precedence_without_environment_mutation(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            root.joinpath('.env').write_text('\n'.join(
+                f'{k}={v}' for k, v in ENV.items()) +
+                '\nOPENAI_CHAT_MODEL=base', encoding='utf-8')
+            root.joinpath('.env.local').write_text(
+                'OPENAI_CHAT_MODEL=local', encoding='utf-8')
+            before = dict(os.environ)
+            for exported, expected in (({}, 'local'),
+                                       ({'OPENAI_CHAT_MODEL': 'export'}, 'export')):
+                self.assertEqual(load_settings(root=root, environ=exported,
+                    ingestion=False, require_chat=True).chat_model, expected)
+            with self.assertRaises(ConfigurationError):
+                load_settings(root=root, environ={'OPENAI_CHAT_MODEL': ''},
+                              ingestion=False, require_chat=True)
+            self.assertEqual(before, dict(os.environ))
+
+    def test_chat_factory_and_owned_sessions(self):
+        from src.config import chat_session, create_chat_model
+        from unittest.mock import AsyncMock
+        config = self.load(ingestion=False, require_chat=True)
+        with patch('src.config.ChatOpenAI') as factory:
+            create_chat_model(config)
+        options = factory.call_args.kwargs
+        for key, value in {'model': 'gpt-6-luna', 'reasoning_effort': 'low',
+                           'temperature': None, 'use_responses_api': False,
+                           'max_completion_tokens': 2048, 'timeout': 60,
+                           'max_retries': 0}.items():
+            self.assertEqual(options[key], value)
+        for fails in (False, True):
+            with patch('src.config.httpx.Client') as sync, patch(
+                    'src.config.httpx.AsyncClient') as asynchronous, patch(
+                    'src.config.create_chat_model') as create:
+                asynchronous.return_value.aclose = AsyncMock()
+                if fails:
+                    create.side_effect = RuntimeError('sentinel')
+                    with self.assertRaises(RuntimeError):
+                        with chat_session(config):
+                            pass
+                else:
+                    with chat_session(config):
+                        pass
+                sync.return_value.__exit__.assert_called_once()
+                asynchronous.return_value.aclose.assert_awaited_once()
+
+    def test_bad_query_config_matrix_and_safe_repr(self):
+        for key in ('OPENAI_API_KEY', 'OPENAI_EMBEDDING_MODEL', 'DATABASE_URL',
+                    'PG_VECTOR_COLLECTION_NAME', 'OPENAI_CHAT_MODEL'):
+            for value in ('', ' \t '):
+                with self.subTest(key=key), self.assertRaisesRegex(ConfigurationError, key):
+                    self.load({key: value}, ingestion=False, require_chat=True)
+        for url in ('postgresql+psycopg://localhost:99999/db',
+                    'postgresql+psycopg://localhost:-1/db',
+                    'postgresql+psycopg://localhost:bad/db'):
+            with self.assertRaises(ConfigurationError) as caught:
+                self.load({'DATABASE_URL': url}, ingestion=False, require_chat=True)
+            self.assertNotIn(url, str(caught.exception))
+        config = self.load({'PDF_PATH': '/nonexistent.pdf'}, ingestion=False, require_chat=True)
+        self.assertIsNone(config.pdf_path)
+        self.assertNotIn('sentinel-secret', repr(config))
+        self.assertNotIn('sentinel-password', repr(config))
+
+    def test_search_import_has_no_environment_clients_or_io(self):
+        import subprocess
+        import sys
+        code = '''
+from unittest.mock import patch
+with patch('sqlalchemy.create_engine', side_effect=AssertionError('database')), \\
+     patch('langchain_openai.ChatOpenAI', side_effect=AssertionError('api')), \\
+     patch('langchain_openai.OpenAIEmbeddings', side_effect=AssertionError('api')), \\
+     patch('dotenv.dotenv_values', side_effect=AssertionError('dotenv')):
+    import src.search
+'''
+        result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+
+    def test_absent_chat_rejected_only_when_required(self):
+        with TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ConfigurationError, 'OPENAI_CHAT_MODEL'):
+                load_settings(root=Path(directory), environ=ENV,
+                              ingestion=False, require_chat=True)

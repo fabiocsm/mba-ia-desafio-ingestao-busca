@@ -1,8 +1,8 @@
 # Quickstart de validação: Busca fundamentada (002)
 
-**Estado:** guia previsto para depois da implementação. `search_prompt` ainda é esqueleto
-na criação deste plano; os comandos que usam a nova cadeia/abertura só funcionarão após
-as tarefas da 002. Não há resultado integrado aprovado desta spec neste documento.
+**Estado:** cadeia implementada e validada em 2026-10-16, CPython 3.12.12/macOS arm64.
+Resultados, trechos e modelos estão em [plans/validacao.md](../../plans/validacao.md),
+seção 002. Este guia permite repetir a validação; não inicia o chat interativo da 003.
 
 Referências: [contrato](contracts/search.md), [modelo de dados](data-model.md) e
 [validação da ingestão](../001-pdf-ingestion/quickstart.md). Executar da raiz do repositório.
@@ -62,8 +62,8 @@ python -m compileall -q src tests
 python -m pip check
 ```
 
-Na implementação, a suíte existente será ampliada com `test_search.py` e casos de config/
-store. Esperar saída 0, incluindo regressão da 001. Os testes devem fornecer dublês e
+A suíte inclui `test_search.py` e os casos de config/store: 61 testes aprovados,
+incluindo regressão da 001. Esperar saída 0. Os testes devem fornecer dublês e
 configuração sintética, sem depender da chave local, PostgreSQL, rede ou tracing.
 
 Conferir particularmente k=10, 1–9 retornos, ordenação/separadores, só branco/lista vazia
@@ -92,7 +92,7 @@ Antes do aceite, confirmar as ausências no documento completo e os trechos efet
 recuperados. Se fato existir no PDF mas não no contexto dessa pergunta, esperar recusa
 nessa consulta e registrar falha de recuperação; SC-001 permanece pendente.
 
-O trecho abaixo é somente um consumidor da cadeia planejada. Executa oito consultas reais,
+O trecho abaixo consome a cadeia implementada. Executa oito consultas reais,
 com custo de embeddings/geração, e encerra os recursos pelo contexto:
 
 ```bash
@@ -249,3 +249,30 @@ mantém o respectivo critério pendente. Os casos de PDF inválido/sem texto já
 O fluxo obrigatório de entrega continua `docker compose up -d` → `python src/ingest.py`
 → `python src/chat.py`; o último comando só terá interação implementada na 003.
 Testes aprovados não garantem ausência absoluta de alucinações ou ataques futuros.
+
+
+## 6. Resultado observado e limites
+
+A bateria de 2026-10-16 com `pdf_validation_20261016_001` (67 chunks) e
+`text-embedding-3-small`/1536, modelo solicitado e devolvido `gpt-6-luna`, esforço low,
+produziu `R$ 85.675.568,77`, `2023` e `R$ 10.000.000,00` em P1–P3. N1–A1 retornaram
+literalmente a frase obrigatória. Quatro contextos controlados (instrução em chunk,
+contradição, fato fora da recuperação e número fornecido na pergunta) também recusaram.
+Páginas/IDs/textos efetivos estão no relatório; ausência de evidência continua sendo
+avaliada pelo modelo, sem garantia universal dada por scores ou parser.
+
+O destino de validação `pdf_validation_20261016_002_empty` foi criado explicitamente
+sem chunks e preservado. O destino `pdf_validation_20261016_002_absent` continuou
+inexistente. Não reutilize o exemplo de criação vazia sem escolher novo nome exclusivo.
+Reinício sem remoção de volume preservou integralmente os 67 registros e uma resposta
+em novo processo. A busca também funcionou sem arquivo PDF e credenciais Google.
+
+São exceções operacionais: base inválida na inicialização, configuração incompatível,
+credencial/quota, timeout/conexão e geração vazia, truncada ou bloqueada. Consulte
+`SearchError.retryable` para decidir se cabe nova pergunta, sem repetição automática.
+Use `with search_prompt()` ou `close()` em `finally`; a cadeia fechada não consulta serviços.
+Falhas de API/banco são simuladas na suíte para evitar induzir custos desnecessários.
+
+Tracing não é habilitado pelo projeto. Sua ativação explícita pode enviar pergunta,
+chunks, prompt, resposta e metadados ao destino externo configurado; consulte o README.
+Linux e entrega global com chat não foram validados nesta spec.

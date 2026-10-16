@@ -1,6 +1,7 @@
 # Contrato de consulta fundamentada
 
-Contrato planejado para a implementação da spec 002; a cadeia atual ainda é um esqueleto.
+Contrato implementado na spec 002 e validado em 2026-10-16; evidências em
+[plans/validacao.md](../../../plans/validacao.md), seção 002.
 Consumidor previsto: CLI da 003 e validação programática. Sem HTTP, interface web ou
 laço interativo adicional nesta etapa.
 
@@ -48,7 +49,7 @@ em construção parcial. Não fechar recurso externo fora desse contrato de prop
 | `SearchChain.__enter__` | Cadeia aberta → a própria cadeia | Permite `with search_prompt() as chain`. |
 | Saída de contexto | Normal, exceção ou interrupção | Libera recursos; não suprime exceções/interrupções. |
 
-Exemplo de consumo, disponível após implementação:
+Exemplo de consumo:
 
 ```python
 from src.search import search_prompt
