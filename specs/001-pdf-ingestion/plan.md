@@ -72,7 +72,7 @@ specs/001-pdf-ingestion/
 └── checklists/requirements.md
 ```
 
-`tasks.md` será produzido por `$speckit-tasks` após este planejamento.
+`tasks.md` contém as tarefas e o estado de execução desta funcionalidade.
 
 ### Código previsto na raiz
 
@@ -186,9 +186,8 @@ para falha na conferência após commit. Não prometer atomicidade entre API e P
 R06–R08 pertencem à 002; R09 à 003. R11 completo, revisão global R01–R11 e visibilidade
 pública ficam na entrega do fluxo completo, sem marcá-los atendidos nesta etapa.
 
-Comandos futuros: `python -m unittest discover -s tests -v` e
-`python -m compileall -q src tests`, após criação da suíte. Não há testes da aplicação
-implementados neste planejamento. Não acrescentar lint/formatador sem necessidade.
+Comandos adotados: `python -m unittest discover -s tests -v` e
+`python -m compileall -q src tests`, com a suíte implementada em `tests/`. Resultados reais em `plans/validacao.md`. Não acrescentar lint/formatador sem necessidade.
 
 Execuções antecipadas da suíte servem para diagnóstico. O gate final de qualidade ocorre
 após as validações integradas de US2/US3 e suas correções; testes e verificações afetados
@@ -204,3 +203,10 @@ contratos e evidências antes de reutilizar uma collection.
 
 O planejamento encerra na Fase 1. Próximos passos: `tasks.md`, análise de consistência,
 implementação e convergência. Gates documentais não substituem essas etapas.
+
+## Descoberta na implementação (2026-10-16)
+
+O bootstrap original teve código 0 sem criar vector: Compose dividia command em
+argumentos e sh -c recebia somente a atribuição PGPASSWORD. T003 corrige o formato
+para uma lista com um único comando shell; nenhuma mudança de infraestrutura ou
+requisito, nem remoção de dados. Evidência em plans/validacao.md.

@@ -1,7 +1,7 @@
 # Contrato — Ingestão por terminal e armazenamento
 
 **Versão**: 1 | **Data**: 2026-10-16 | **Escopo**: [spec 001](../spec.md).
-Contrato previsto; scripts atuais ainda são esqueleto.
+Contrato implementado e verificado; evidências em [validacao.md](../../../plans/validacao.md).
 
 ## Interface do operador
 
@@ -49,9 +49,9 @@ As fábricas aplicam os timeouts do [plano](../plan.md).
 | Collection incompatível | Orientar configuração original ou novo destino/reindexação explícita. |
 | Escrita/conferência | Ingestão não confirmada; quantidades só verificadas; commit incerto exige reexecução idempotente. |
 
-## Fronteiras Python previstas
+## Fronteiras Python
 
-Funções públicas terão tipos explícitos. Os nomes fixam responsabilidades para
+Funções públicas têm tipos explícitos. Os nomes fixam responsabilidades para
 implementação/testes, sem hierarquia de interfaces:
 
 | Módulo/função | Entrada → saída | Efeitos/garantias |

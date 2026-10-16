@@ -1,7 +1,8 @@
 # Quickstart de validação — 001: Ingestão do PDF
 
-Este guia será executado **após a implementação** das tarefas. Os scripts atuais ainda
-são esqueleto e a suíte abaixo ainda será criada. Pesquisa já executada e seus limites:
+Guia da ingestão implementada. Resultados reais da execução, incluindo reingestão
+e persistência após reinício, estão em [validacao.md](../../plans/validacao.md).
+Pesquisa de compatibilidade e seus limites:
 [research.md](research.md). Contratos: [ingestão](contracts/ingestion.md) e
 [dados](data-model.md). Usar uma collection exclusiva de validação, sem apagar dados existentes.
 
@@ -29,7 +30,7 @@ versões e instalação real em ambiente novo; a instalação temporária por `u
 não substitui esta reprodução.
 
 Se `.env` ainda não existir, copiar `.env.example` para `.env`; preservar configuração
-local preexistente. Após a implementação, o exemplo deverá conter:
+local preexistente. O exemplo contém:
 
 ```dotenv
 OPENAI_API_KEY=
@@ -41,7 +42,7 @@ PDF_PATH=document.pdf
 ```
 
 Preencher a chave real somente em arquivo local ignorado. Se `.env.local` já contém a
-chave, preservá-lo e deixar a chave vazia no `.env`; o carregamento previsto usa precedência
+chave, preservá-lo e deixar a chave vazia no `.env`; o carregamento usa precedência
 ambiente exportado > `.env.local` > `.env`. Não imprimir/versionar nenhum desses arquivos
 nem exigir Google ou modelo de chat para esta spec. Embeddings são enviados ao provedor e podem
 ter custo; credencial válida, acesso ao modelo e quota são pré-condições da integração.

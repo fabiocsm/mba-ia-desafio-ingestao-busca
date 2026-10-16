@@ -193,3 +193,122 @@ Abra o projeto no Codex. Se as novas skills ainda não aparecerem na sessão atu
 Essas invocações são feitas no chat do agente, não no terminal. O plano em `plans/` é uma análise inicial; os artefatos gerados em `specs/` serão a referência do trabalho conduzido pelo fluxo SDD.
 
 Referências: [adoção em projetos existentes](https://github.github.io/spec-kit/guides/existing-projects.html) e [integração e sintaxe dos comandos](https://github.github.io/spec-kit/reference/integrations.html).
+
+## Solução implementada — ingestão (spec 001)
+
+A ingestão está implementada. Busca e chat continuam previstos nas specs 002/003;
+os exemplos de perguntas e o prompt acima são o enunciado, sem validação de respostas
+nesta etapa. Consulte [o registro de execução](plans/validacao.md) para resultados reais.
+
+Ambiente validado: **CPython 3.12.12**, macOS arm64, Docker e Compose.
+Confirme `python3 --version` antes de criar o ambiente. Se usa `uv`, selecione
+3.12.12 com `uv python install 3.12.12` e acrescente o diretório de
+`uv python find 3.12.12` ao início do PATH da sessão.
+
+Da raiz do repositório:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python -m pip check
+# Somente se .env ainda não existir:
+cp .env.example .env
+```
+
+Preencha `OPENAI_API_KEY` em `.env`, `.env.local` ou ambiente exportado.
+O complemento `.env.local` pode conter só a chave. Precedência: ambiente exportado
+(inclusive vazio) > `.env.local` > `.env`. Os arquivos locais são ignorados pelo Git;
+não os imprima nem versione. A configuração não altera esses arquivos.
+
+| Variável | Uso na ingestão |
+| --- | --- |
+| `OPENAI_API_KEY` | Chave OpenAI não vazia. |
+| `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small`, disponível à conta. |
+| `OPENAI_EMBEDDING_DIMENSIONS` | Inteiro positivo, padrão 1536, enviado explicitamente. |
+| `DATABASE_URL` | URL `postgresql+psycopg://` do exemplo para o Compose local. |
+| `PG_VECTOR_COLLECTION_NAME` | Destino explícito, uma revisão de um PDF por collection. |
+| `PDF_PATH` | PDF textual local; exemplo `document.pdf`, relativo ao diretório de execução. |
+
+A ingestão não exige modelo de chat nem chave Google. Não há pressuposto de gratuidade:
+verifique acesso e quota no provedor. A [documentação oficial de embeddings](https://developers.openai.com/api/docs/guides/embeddings)
+e [do modelo](https://developers.openai.com/api/docs/models/text-embedding-3-small)
+fundamentam a escolha; a integração efetiva consta do registro de validação.
+
+```bash
+docker compose up -d
+docker compose ps -a
+docker compose exec -T postgres psql -U postgres -d rag -c "SELECT extversion FROM pg_extension WHERE extname='vector';"
+python src/ingest.py
+```
+
+Antes da ingestão, `postgres` deve estar saudável, o bootstrap deve terminar com
+código 0 e a consulta deve retornar uma versão de `vector`. Sucesso da aplicação tem
+código 0 e informa arquivo, páginas carregadas, chunks confirmados e collection.
+A conferência completa de texto, metadados, IDs e dimensões é feita após a escrita.
+Consulte [o quickstart](specs/001-pdf-ingestion/quickstart.md) para consultas SQL
+somente de leitura, delimitadas pelo nome da collection, e amostras por página.
+
+O comando exigido para a próxima etapa permanece `python src/chat.py`, cuja
+implementação e validação pertencem às specs 002/003.
+
+Testes isolados (não usam chave real, rede ou PostgreSQL):
+
+```bash
+python -m unittest discover -s tests -v
+python -m compileall -q src tests
+```
+
+### Diagnóstico de ingestão
+
+Falhas retornam código 1 e orientação em stderr; Ctrl+C retorna 130, liberando recursos.
+A ausência de confirmação exige verificar o problema antes de reexecutar.
+
+| Diagnóstico | Correção |
+| --- | --- |
+| Variável obrigatória | Revise o nome indicado em `.env`, `.env.local` e ambiente; valor exportado vazio prevalece. |
+| Arquivo inexistente/acesso negado | Confira `PDF_PATH`, extensão `.pdf` e permissões. |
+| PDF inválido ou sem texto | Forneça PDF íntegro com texto extraível. OCR não é suportado. |
+| Credencial/API/modelo | Revise chave e autorização para o modelo na conta OpenAI. |
+| Quota/limite | Confira saldo e limites; reexecução é manual e pode gerar cobrança. |
+| Conexão ou timeout | Confira rede, `docker compose ps -a`, porta 5432 e `DATABASE_URL`. |
+| Extensão ausente | Verifique bootstrap com saída 0 e consulte `pg_extension`. |
+| Escrita/conferência/commit incerto | Resultado pode estar persistido mesmo com erro. Reexecute o mesmo PDF/configuração para recuperar pelos mesmos IDs, sem limpar dados. |
+
+API tem timeout de 60 s e nenhuma retentativa automática; banco tem conexão/pool de
+10 s, instrução de 30 s e bloqueio de 5 s. A aplicação não imprime exceções HTTP/SQL
+brutas nem habilita rastreamento externo. Não configure LangSmith/tracing nesta etapa;
+essa opção requer documentação explícita dos dados enviados antes de ser utilizada.
+
+### Reingestão, preservação e reindexação
+
+O manifesto da collection registra provedor, modelo, dimensão, SHA-256 do PDF e
+pipeline. Ele é imutável, mesmo com collection vazia. Uma collection existente sem
+manifesto é rejeitada; a aplicação não adota dados legados por inferência de dimensão.
+PDF, modelo, dimensão ou pipeline alterado exige **nova collection explícita** em
+`PG_VECTOR_COLLECTION_NAME`, com ingestão integral. A configuração incompatível é
+rejeitada antes da geração dos embeddings, inclusive com dimensão igual.
+
+Reexecutar o mesmo PDF/configuração gera os mesmos IDs e faz upsert, sem duplicar
+chunks. Textos iguais em posições distintas têm IDs próprios, e outra collection tem
+IDs diferentes. A reexecução pode recalcular e cobrar embeddings; não há cache.
+Após commit incerto ou falha de conferência, essa reexecução recupera os mesmos IDs.
+
+Na integração PGVector 0.0.15, a dimensão fixa seria aplicada à tabela compartilhada.
+A solução usa coluna `vector` sem dimensão global fixa e valida dimensão por collection,
+sem índice ANN. Schema legado com dimensão fixa incompatível exige banco separado
+ou migração administrativa planejada; não há `ALTER TABLE` automático.
+
+Reindexação em nova collection preserva o destino anterior e consome espaço adicional.
+A busca futura deverá apontar para o mesmo modelo, dimensão e collection da ingestão.
+Nenhum fluxo normal apaga collection, tabela ou volume. Este projeto não fornece comando
+de limpeza; uma limpeza administrativa futura deve delimitar dados e documentar a
+perda antes de ser executada. Para testar persistência sem perda de dados:
+
+```bash
+docker compose restart postgres
+docker compose ps -a
+```
+
+Aguarde o estado saudável e consulte os registros antes de qualquer reingestão.
+Remover volume apagaria a base persistida e não faz parte do procedimento.

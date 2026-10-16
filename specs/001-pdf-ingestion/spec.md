@@ -6,7 +6,8 @@
 
 **Created**: 2026-10-16
 
-**Status**: Draft — pronta para planejamento após revisão de qualidade
+**Status**: Implementada e validada — spec 001 concluída em 2026-10-16;
+evidências e limites em [validacao.md](../../plans/validacao.md).
 
 **Input**: User description: "Permitir que o responsável configure o ambiente e ingira um PDF,
 dividindo seu texto em trechos com sobreposição, gerando representações semânticas e mantendo
