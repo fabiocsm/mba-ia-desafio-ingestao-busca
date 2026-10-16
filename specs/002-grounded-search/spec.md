@@ -6,7 +6,7 @@
 
 **Created**: 2026-10-16
 
-**Status**: Draft — pronta para planejamento após revisão de qualidade
+**Status**: Tarefas geradas — pronta para análise de consistência; implementação e validação pendentes
 
 **Input**: User description: "Receber uma pergunta, selecionar até dez trechos relevantes do
 PDF já ingerido e responder somente com informações explícitas nesse contexto. Usar as

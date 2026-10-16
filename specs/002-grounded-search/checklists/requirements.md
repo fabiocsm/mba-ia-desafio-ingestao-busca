@@ -43,4 +43,6 @@
 - Contrato de integração, componentes e modelos concretos serão detalhados no plano técnico,
   consumindo as restrições já existentes na constituição.
 - Nenhuma execução real, resposta obtida ou implementação é declarada nesta revisão.
-- Próxima fase: $speckit-plan; a dependência da spec 001 está explicitada.
+- Planejamento concluído em 2026-10-16: plan.md, research.md, data-model.md,
+  contracts/search.md e quickstart.md. Tarefas geradas em tasks.md na mesma data.
+  Próxima fase: $speckit-analyze; implementação e validação real continuam pendentes.
