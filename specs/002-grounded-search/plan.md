@@ -1,6 +1,6 @@
 # Plano de implementação: Busca e respostas fundamentadas no PDF
 
-**Branch Git**: `main` (existente; nenhuma branch criada) | **Data**: 2026-10-16  
+**Branch Git**: `main` (existente; nenhuma branch criada) | **Data**: 2026-10-16\
 **Spec**: [spec.md](spec.md) | **Identificador Spec Kit**: `002-grounded-search`
 
 **Entrada**: spec 002, constituição v1.0.0, README e implementação/contratos da
