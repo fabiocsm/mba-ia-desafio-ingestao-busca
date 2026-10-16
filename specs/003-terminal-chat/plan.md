@@ -10,6 +10,10 @@ R01–R11. Spec ativa local: `specs/003-terminal-chat` em `.specify/feature.json
 O setup foi executado com `SPECIFY_FEATURE=main` e diretório explícito; o seletor
 persistido é o diretório, independente da branch Git.
 
+**Execução:** implementação e validação local registradas na seção 003 de
+[plans/validacao.md](../../plans/validacao.md); candidato público pendente. O texto
+a seguir preserva as decisões do planejamento.
+
 ## Resumo
 
 Substituir o esqueleto de `src/chat.py` por uma CLI sequencial que inicializa uma única
@@ -33,7 +37,7 @@ essa entrega já validada e termina antes de gerar tarefas ou implementar códig
 | Configuração | `search_prompt()` usa `load_settings(ingestion=False, require_chat=True)`; ambiente exportado (inclusive vazio) > `.env.local` > `.env`. Chat sem PDF_PATH/Google e sem variáveis novas. |
 | Armazenamento | PostgreSQL 17/pgVector pelo Compose; consulta protegida para leitura já implementada. Nenhuma tabela, collection ou persistência de conversa nova. |
 | Tipo/plataforma | CLI local síncrona, executada da raiz; macOS arm64 previamente validado. Não alegar execução Linux sem evidência. |
-| Testes | `unittest`/`unittest.mock`, `io.StringIO`, leitor/cadeia dublês, subprocesso isolado para entrypoint. `tests/test_chat.py` ainda será criado. |
+| Testes | `unittest`/`unittest.mock`, `io.StringIO`, leitor/cadeia dublês, subprocesso isolado para entrypoint. `tests/test_chat.py` implementado na execução da 003. |
 | Verificadores | Comandos existentes: unittest discover, compileall, pip check e git diff --check; sem ferramenta/dependência adicional. |
 | Desempenho | Uma cadeia por sessão; perguntas sequenciais, um invoke por pergunta válida; nenhum invoke para branco/saída. Sem meta arbitrária de latência. |
 | Limites herdados | API 60 s por requisição, zero retries, geração 2048 tokens incluindo raciocínio. Banco: conexão/pool 10 s, statement 30 s, lock 5 s. Não constituem prazo global. |
@@ -193,8 +197,9 @@ Problema de visibilidade/publicação deve permanecer pendente até resolução 
 
 Testes novos protegem a fronteira da CLI sem replicar toda a suíte da busca. Dublês
 comprovam transiente seguido de sucesso sem provocar falhas cobradas. Entry point em
-subprocesso deve comprovar código não zero em configuração inválida usando diretório
-temporário sem `.env` e ambiente isolado; importações devem continuar sem efeitos externos.
+subprocesso deve comprovar código não zero em configuração inválida usando `OPENAI_API_KEY` exportada vazia (prevalece inclusive sobre arquivos locais);
+mudar somente cwd não isola .env, cuja raiz vem do módulo de configuração. Importações
+devem continuar sem efeitos externos.
 Nenhum teste de chat é alegado disponível antes da implementação.
 
 ### Consolidação R01–R11

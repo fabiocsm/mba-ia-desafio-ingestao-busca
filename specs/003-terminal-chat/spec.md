@@ -6,7 +6,7 @@
 
 **Created**: 2026-10-16
 
-**Status**: Tarefas geradas — pesquisa, desenho e contratos concluídos; análise de consistência e implementação pendentes
+**Status**: Implementada e verificada localmente — revisão pública do candidato pendente (T029)
 
 **Input**: User description: "Permitir que o usuário converse pelo terminal com a base do PDF,
 fazendo várias perguntas na mesma execução, recebendo respostas fundamentadas ou recusas,

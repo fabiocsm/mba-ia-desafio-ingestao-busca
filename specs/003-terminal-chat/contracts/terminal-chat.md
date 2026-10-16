@@ -1,6 +1,6 @@
 # Contrato: CLI de chat no terminal
 
-Contrato previsto para a implementação da 003. Complementa o
+Contrato implementado na 003. Complementa o
 [contrato de busca da 002](../../002-grounded-search/contracts/search.md).
 
 ## Execução e configuração
@@ -80,7 +80,7 @@ Nenhum desses caminhos cria/limpa collection nem modifica arquivos locais.
 
 ## Verificação do contrato
 
-`tests/test_chat.py` é previsto, ainda inexistente neste planejamento. Dublês devem
+`tests/test_chat.py` implementa a verificação isolada. Dublês devem
 preservar contexto/invoke/exceções e verificar fábrica única, entradas exatas, texto,
 streams, códigos, fechamento e ausência de segredos sentinela. Cobrir import e script,
 EOF/Ctrl+C na leitura/invoke, falha transitória seguida de sucesso, fatal e falha de

@@ -1,9 +1,9 @@
 # Guia de validação: Chat e entrega (003)
 
-**Estado:** roteiro para depois de tarefas, análise e implementação. O chat ainda é
-um esqueleto; `tests/test_chat.py` ainda não existe. Os comandos gerais de teste já
-existem, mas não comprovam o chat antes de sua implementação. Registrar execuções
-na seção 003 de [plans/validacao.md](../../plans/validacao.md), com revisão e data.
+**Estado:** CLI implementada. Em 2026-10-16, 78 testes isolados, bateria real,
+interrupções, persistência e reprodução em clone/venv/banco novos passaram. A revisão
+pública do candidato continua pendente; consulte a seção 003 de
+[plans/validacao.md](../../plans/validacao.md) para comandos, identidade e limites.
 
 Contrato de referência: [terminal-chat.md](contracts/terminal-chat.md).
 Dados/estados/evidências: [data-model.md](data-model.md).
@@ -57,7 +57,7 @@ e 67 chunks; comparar hash/configuração, sem presumir que isso prova esta nova
 
 ## 2. Verificações isoladas
 
-Após implementar os testes da 003:
+Testes da 003 implementados (17 testes de chat, 78 no total nesta revisão):
 
 ```bash
 python -m unittest tests.test_chat -v
@@ -75,7 +75,7 @@ fábrica/liberação que falham e sigilo das sentinelas em stdout/stderr/log.
 
 Também verificar import sem efeitos externos e script em subprocesso com ambiente
 isolado/configuração ausente. Não depender do `.env` do desenvolvedor para esse teste.
-Não inventar quantidade de testes esperada antes de implementá-los.
+Os resultados atuais estão no relatório; novas alterações exigem conferir a quantidade efetiva.
 
 ## 3. Sessão real e bateria factual
 
@@ -205,3 +205,25 @@ SC-004 e cenários dependentes pendentes, com motivo; não substituí-los por te
 
 Após testes e registros, executar `$speckit-converge` para conferir lacunas da 003.
 Uma tarefa pendente continua aberta até sua evidência ou resolução do bloqueio.
+
+
+## 8. Resultados conferidos em 2026-10-16
+
+P1/P2/P3 na mesma sessão retornaram `R$ 85.675.568,77`, ano `2023` e
+`R$ 10.000.000,00`, confirmados nas páginas humanas 1/2/3. A sessão observável também
+confirmou N1/N2/N3/O1/A1 com recusa exata e dez chunks da própria recuperação por
+pergunta; IDs/trechos/modelos estão no relatório. Isso não comprova ausência universal
+de alucinações. Ctrl+C foi exercitado com SIGINT em processos reais na leitura e na
+consulta, com liberação observável, código 0 e nenhuma resposta de erro.
+
+A reprodução local usou clone do candidato sobre b94e6ef com diff aplicado e teste novo,
+venv novo, CPython 3.12.12 e Compose isolado: projeto rag_terminal_003, cópia
+compose.validation.yml com container_name=postgres_rag_terminal_003, porta 55433:5432 e
+volume próprio. Mantida a base original em 5432. Configuração por .env.example copiado,
+credencial e overrides documentados pelo ambiente. Ingestão nova de 67 chunks, chat,
+verificadores e persistência após reinício passaram. A variação de infraestrutura foi
+registrada, sem editar fonte nem remover volumes. Linux não foi testado.
+
+O repositório público e parent do fork foram confirmados anonimamente, porém o código
+desta implementação ainda está local. T029/SC-007/R11 exigem repetir a conferência após
+a revisão candidata estar disponível publicamente; não declarar a entrega global validada.

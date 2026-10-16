@@ -194,11 +194,11 @@ Essas invocações são feitas no chat do agente, não no terminal. O plano em `
 
 Referências: [adoção em projetos existentes](https://github.github.io/spec-kit/guides/existing-projects.html) e [integração e sintaxe dos comandos](https://github.github.io/spec-kit/reference/integrations.html).
 
-## Solução implementada — ingestão e busca (specs 001/002)
+## Solução implementada — ingestão, busca e chat (specs 001/002/003)
 
-A ingestão e a cadeia programática de busca estão implementadas. O chat interativo
-continua previsto na spec 003; os exemplos do enunciado só são evidência quando
-conferidos na validação real. Consulte [o registro de execução](plans/validacao.md) para resultados reais.
+A ingestão, a cadeia programática de busca e o chat interativo estão implementados.
+A entrega global depende das verificações registradas na seção 003 do relatório;
+os exemplos do enunciado só são evidência quando conferidos na validação real. Consulte [o registro de execução](plans/validacao.md) para resultados reais.
 
 Ambiente validado: **CPython 3.12.12**, macOS arm64, Docker e Compose.
 Confirme `python3 --version` antes de criar o ambiente. Se usa `uv`, selecione
@@ -249,8 +249,8 @@ A conferência completa de texto, metadados, IDs e dimensões é feita após a e
 Consulte [o quickstart](specs/001-pdf-ingestion/quickstart.md) para consultas SQL
 somente de leitura, delimitadas pelo nome da collection, e amostras por página.
 
-O comando exigido para a próxima etapa permanece `python src/chat.py`, cuja
-interação e validação pertencem à spec 003.
+Configure também `OPENAI_CHAT_MODEL=gpt-6-luna` para executar `python src/chat.py`.
+A chave Google e `PDF_PATH` não são exigidos pelo chat.
 
 Testes isolados (não usam chave real, rede ou PostgreSQL):
 
@@ -342,7 +342,7 @@ um prazo global de consulta. A construção não verifica acesso/quota com chama
 
 A busca solicita k=10, mantém os resultados disponíveis e não usa score como prova de
 resposta. Somente os textos recuperados entram no contexto, sem memória entre perguntas.
-O laço interativo de `python src/chat.py` permanece na spec 003.
+O laço interativo de `python src/chat.py` reutiliza essa cadeia.
 
 
 Sem conteúdo recuperado, a cadeia devolve diretamente a frase obrigatória, sem geração.
@@ -360,8 +360,7 @@ em 2026-10-16. Esses resultados não garantem ausência de alucinações para ou
 | `SearchError.retryable=True` | Confira rede/serviço ou aguarde o limite temporário antes de enviar outra pergunta. Não há retry automático. |
 | `SearchError.retryable=False` | Corrija credencial, quota, modelo, base ou limite de geração e reabra a cadeia. Saída truncada/bloqueada não vira resposta parcial. |
 
-Falhas operacionais são exceções, distintas da recusa factual. A apresentação/código de
-saída do chat será tratada na 003. O engine de consulta usa transações de leitura e os
+Falhas operacionais são exceções, distintas da recusa factual. A CLI apresenta esses erros em stderr e encerra em código 1 quando fatais. O engine de consulta usa transações de leitura e os
 mesmos timeouts de banco da ingestão. Uma collection removida durante a consulta produz
 erro; retorno vazio após abertura válida produz a recusa direta.
 
@@ -371,3 +370,50 @@ prompts, respostas e metadados da execução podem ser enviados ao serviço conf
 revise acesso e retenção antes de ativar. Logs normais só registram categorias de falha,
 sem esses conteúdos, chaves ou URL de conexão. Consulte o
 [quickstart de busca](specs/002-grounded-search/quickstart.md) para validação e diagnóstico.
+
+
+### Chat no terminal (spec 003)
+
+Com o venv ativo, base ingerida e modelo de chat configurado:
+
+```bash
+python src/chat.py
+```
+
+Cada `PERGUNTA: ` recebe uma pergunta; `RESPOSTA: ` apresenta o texto integral da
+busca, inclusive a recusa obrigatória. A cadeia e seus clientes são abertos uma vez,
+reutilizados para várias perguntas e liberados ao encerrar. As perguntas são
+independentes, sem histórico para completar fatos. Linhas vazias ou só espaços são
+ignoradas sem API. `sair`/`exit` aceitam caixa e espaços externos; EOF (Ctrl+D no Unix)
+e Ctrl+C também encerram normalmente, inclusive durante consulta, com código 0 se a
+liberação terminar. Uma requisição já enviada pode gerar cobrança após interrupção.
+
+Erros nunca são respostas factuais: aparecem em stderr. `Erro ao iniciar o chat:`
+orienta corrigir configuração/Compose/bootstrap ou ingerir uma base ausente/vazia,
+sem primeiro prompt. Configure `OPENAI_CHAT_MODEL` explicitamente: o arquivo de
+exemplo não é carregado como configuração local. `Erro na consulta:` transitório
+permite enviar outra pergunta na mesma cadeia; fatal (credencial/quota/modelo/base
+incompatível/saída inválida) encerra com código 1. Não há retry automático. Falhas
+inesperadas recebem diagnóstico estático seguro; falha de liberação também retorna 1.
+Após corrigir falha fatal, execute o comando novamente. Não há aquecimento pago.
+
+Testes do contrato da CLI, sem serviços ou credenciais reais:
+
+```bash
+python -m unittest tests.test_chat -v
+```
+
+O [guia 003](specs/003-terminal-chat/quickstart.md) contém bateria factual, interrupções,
+persistência e reprodução nova. A [seção 003 de validação](plans/validacao.md#validação--chat-no-terminal-e-entrega-003)
+distingue resultados executados, dublês e pendências da entrega pública. Sucesso dos
+testes não garante ausência absoluta de alucinações. Custos, timeouts e tracing seguem
+as configurações da busca descritas acima, sem novas variáveis da CLI.
+
+
+Resultados reais da CLI em 2026-10-16: faturamento da Alfa Agronegócio Indústria
+`R$ 85.675.568,77` (página 1), fundação da Atlas Biotech S.A. em `2023` (página 2) e
+faturamento da SuperTechIABrazil `R$ 10.000.000,00` (página 3). Três ausências, opinião
+e desvio retornaram a recusa exata. A reprodução em clone/venv/banco novos e a persistência
+também passaram; o relatório registra a variação local de Compose com porta/volume
+separados. **A entrega pública do candidato ainda está pendente (T029)**; o repositório
+é público e o fork está correto, mas a revisão pública conferida não contém este código.
