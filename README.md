@@ -153,3 +153,43 @@ python src/chat.py
 ## Entregável
 
 Repositório público no GitHub contendo todo o código-fonte e README com instruções claras de execução do projeto.
+
+## Desenvolvimento com Spec Kit (SDD)
+
+Este repositório foi inicializado com o [GitHub Spec Kit](https://github.com/github/spec-kit), usando `specify-cli` **1.0.8**, integração **Codex** e scripts Bash. A instalação da ferramenta é independente do ambiente virtual e das dependências Python da aplicação.
+
+Arquivos do fluxo:
+
+- `.agents/skills/speckit-*/SKILL.md`: skills SDD para o Codex.
+- `.specify/templates/`: templates de especificação, planejamento, tarefas e checklists.
+- `.specify/scripts/bash/`: scripts auxiliares do fluxo.
+- `.specify/memory/constitution.md`: constituição v1.0.0 com os princípios, restrições e critérios de qualidade do projeto.
+- `.specify/workflows/`: definição do workflow SDD.
+- `specs/`: diretório criado ao especificar uma funcionalidade, contendo seus artefatos SDD.
+
+Para instalar a mesma versão da CLI em outra máquina com [uv](https://docs.astral.sh/uv/) e Python 3.11 ou superior:
+
+```bash
+uv tool install specify-cli==1.0.8
+specify version
+specify integration status --json
+```
+
+Execute a verificação da integração na raiz deste repositório. Os arquivos de inicialização já estão presentes; após clonar, não é necessário executar `specify init` novamente.
+
+### Fluxo no chat do Codex
+
+Abra o projeto no Codex. Se as novas skills ainda não aparecerem na sessão atual, abra uma nova sessão no repositório. Invoque cada etapa separadamente e revise os artefatos antes de avançar:
+
+1. `$speckit-constitution`: definir os princípios a partir dos requisitos obrigatórios do README.
+2. `$speckit-specify`: especificar a ingestão de PDF e as perguntas via CLI, usando este README como fonte dos requisitos e o [plano inicial](plans/plano-implementacao.md) como contexto.
+3. `$speckit-clarify`: esclarecer ambiguidades relevantes antes do planejamento, quando necessário.
+4. `$speckit-plan`: produzir o plano técnico da especificação.
+5. `$speckit-tasks`: decompor o plano em tarefas executáveis.
+6. `$speckit-analyze`: conferir a consistência entre especificação, plano e tarefas.
+7. `$speckit-implement`: implementar as tarefas.
+8. `$speckit-converge`: identificar lacunas; repetir implementação e convergência quando houver tarefas restantes.
+
+Essas invocações são feitas no chat do agente, não no terminal. O plano em `plans/` é uma análise inicial; os artefatos gerados em `specs/` serão a referência do trabalho conduzido pelo fluxo SDD.
+
+Referências: [adoção em projetos existentes](https://github.github.io/spec-kit/guides/existing-projects.html) e [integração e sintaxe dos comandos](https://github.github.io/spec-kit/reference/integrations.html).
