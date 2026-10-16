@@ -6,7 +6,7 @@
 
 **Created**: 2026-10-16
 
-**Status**: Draft — pronta para planejamento após revisão de qualidade
+**Status**: Tarefas geradas — pesquisa, desenho e contratos concluídos; análise de consistência e implementação pendentes
 
 **Input**: User description: "Permitir que o usuário converse pelo terminal com a base do PDF,
 fazendo várias perguntas na mesma execução, recebendo respostas fundamentadas ou recusas,
