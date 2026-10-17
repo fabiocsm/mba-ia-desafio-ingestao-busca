@@ -1,6 +1,6 @@
 # Feature Specification: Chat no terminal e entrega reproduzível
 
-**Feature Branch**: main no planejamento; implementação publicada em dev, PR #1
+**Feature Branch**: `main` (destino da entrega); candidato publicado no PR #1
 
 **Feature Directory**: specs/003-terminal-chat
 

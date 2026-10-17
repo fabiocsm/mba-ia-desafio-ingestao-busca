@@ -3,9 +3,11 @@
 **Entrada**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md),
 [data-model.md](data-model.md), [contrato](contracts/terminal-chat.md) e
 [quickstart.md](quickstart.md), em `specs/003-terminal-chat/`.
-**Data**: 2026-10-16 | **Branch Git**: `main` no planejamento; entrega em `dev` (PR #1) | **Spec ativa**: `003-terminal-chat`.
+**Data**: 2026-10-16 | **Branch Git**: `main` (destino da entrega); candidato no PR #1 | **Spec ativa**: `003-terminal-chat`.
 
-**Estado da execução:** 35/35 tarefas concluídas. T029/T034/T035 têm evidência na
+**Estado da execução:** 37/37 tarefas concluídas. T036/T037 têm evidência na
+seção [Instalação limpa do README](../../plans/validacao.md#instalação-limpa-do-readme-003-t036-e-t037).
+T029/T034/T035 têm evidência na
 seção [Fechamento público da entrega 003](../../plans/validacao.md#fechamento-público-da-entrega-003),
 referente à revisão pública `ace6549`. As descrições das fases preservam as condições
 e os bloqueios observados nas rodadas anteriores.
@@ -253,3 +255,8 @@ Esta conferência é estrutural, não substitui `$speckit-analyze` nem comprova 
 ## Phase 8: Convergence
 
 - [X] T035 [US3] Concluir o gate público já rastreado em T029/T034 após a disponibilização autorizada do candidato: confirmar por acesso anônimo que a revisão de entrega inclui `src/chat.py` e `tests/test_chat.py` do candidato validado, conferir estrutura/fork/documentação/segredos dessa revisão e registrar URL, identidade, comandos e resultados em `plans/validacao.md`; sincronizar os avisos de pendência em `README.md`, `specs/003-terminal-chat/spec.md`, `plan.md` e `quickstart.md` somente após comprovação, preservando registros históricos, e executar nova convergência antes de declarar entrega integral per FR-013, FR-014, SC-007, US3/AC4 (partial, HIGH). Reavaliação registrada na rodada original: API anônima HTTP 200 confirmava público/fork correto; o chat público diferia do candidato local e o teste público retornava HTTP 404. Resolvido pela conferência da revisão ace6549, com ambos os arquivos públicos em HTTP 200. Complementa o fechamento documental de T029/T034, sem nova implementação funcional, publicação automática ou alteração de visibilidade.
+
+## Phase 9: Convergence
+
+- [X] T036 [US3] Conferir a revisão obtida pelo clone de `README.md` e manter o comando padrão para a entrega integrada em `main`, conforme orientação do responsável; alinhar o procedimento em `specs/003-terminal-chat/quickstart.md` e registrar a decisão em `plan.md`; reproduzir instalação/configuração/ingestão/chat em clone e venv novos, executar os verificadores documentados e registrar revisões, comandos, resultados e limites em `plans/validacao.md`, preservando pendências se houver bloqueio per FR-009, FR-010, FR-011, FR-014, SC-004, US3/AC1 (partial, HIGH).
+- [X] T037 [US3] Documentar em `README.md` como isolar o volume por `COMPOSE_PROJECT_NAME` ao repetir a instalação no mesmo host, mantendo porta/nome de container livres; executar bootstrap em volume novo e conferir persistência após reinício sem remover volumes, registrando ambiente e evidências em `plans/validacao.md` e alinhando `quickstart.md`/`plan.md` per FR-009, FR-010, FR-012, SC-004, SC-006, plan: reprodução em ambiente novo (partial, MEDIUM).

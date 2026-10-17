@@ -82,6 +82,21 @@ A senha `postgres` acima é a configuração de exemplo do banco local.
 
 ### 4. PostgreSQL e extensão vector
 
+Em uma primeira instalação, execute os comandos abaixo diretamente. Para repetir
+a instalação no mesmo host com **um banco novo**, preservando volumes anteriores,
+antes escolha um nome de projeto Compose ainda não usado:
+
+```bash
+export COMPOSE_PROJECT_NAME=rag_readme_clean_20261016
+```
+
+Mantenha essa variável na sessão durante todos os comandos `docker compose` da
+instalação, inclusive reinício e parada; em outra sessão, exporte o mesmo nome para
+retomar esse banco. O nome define um volume separado; reutilizá-lo também reutiliza
+seus dados. A porta 5432 e o container `postgres_rag` continuam precisando estar
+livres. Outro clone com o mesmo nome de diretório, sem essa variável, pode reutilizar
+o volume padrão do projeto: clonar novamente não limpa o banco.
+
 ```bash
 docker compose up -d
 docker compose ps -a
@@ -141,6 +156,11 @@ Os 78 testes isolados executam sem API, credenciais reais ou PostgreSQL ativo.
 O [relatório de validação](plans/validacao.md#fechamento-público-da-entrega-003)
 registra a conferência pública de T029/T034/T035, a matriz R01–R11 e as evidências
 anteriores de integração, reprodução e persistência.
+
+A [reexecução da instalação limpa](plans/validacao.md#instalação-limpa-do-readme-003-t036-e-t037)
+registra a revisão avaliada, a instalação em volume novo e os resultados da
+ingestão, chat, persistência e testes. As instruções de clone seguem a entrega
+integrada em `main`; a validação não executou nem comprovou o merge.
 
 O escopo é um PDF textual, um provedor e chat por terminal; não inclui OCR, web,
 múltiplos PDFs ou histórico. Trocar PDF, modelo de embeddings, dimensão ou pipeline

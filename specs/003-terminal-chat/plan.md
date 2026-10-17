@@ -1,6 +1,6 @@
 # Plano de implementação: Chat no terminal e entrega reproduzível
 
-**Branch Git**: `main` no planejamento; entrega em `dev`, PR #1 | **Data**: 2026-10-16
+**Branch Git**: `main` (destino da entrega); candidato no PR #1 | **Data**: 2026-10-16
 
 **Spec**: [spec.md](spec.md) | **Identificador Spec Kit**: `003-terminal-chat`
 
@@ -236,3 +236,22 @@ resolveu a 003 persistida. Links locais, blocos Markdown e ausência de placehol
 pendentes foram conferidos nos cinco arquivos gerados; `git diff --check` passou.
 Rechecado `.specify/extensions.yml` após o desenho: inexistente, assim como na checagem
 anterior; nenhum hook pré/pós-plan registrado para despachar.
+
+
+## Ajuste de reprodução pelo README — T036/T037
+
+Na reexecução solicitada em 2026-10-16, o clone padrão selecionou a revisão
+`dba3926`, anterior à integração da implementação. A bateria usou a revisão
+candidata `7831b7d`, identificada no relatório. Por orientação do responsável,
+que realizará o merge em `main`, README e quickstart mantêm o clone padrão, sem
+selecionar branch. A bateria não comprova o merge nem a execução posterior a ele.
+Requisito/contrato da aplicação permanece igual (FR-009/010, SC-004, US3/AC1).
+
+Para repetir o bootstrap no mesmo host sem reutilizar o volume antigo e sem alterar
+porta ou nome de container, documentar a variável padrão do Compose
+`COMPOSE_PROJECT_NAME` com nome inédito. Porta 5432 e `postgres_rag` devem estar
+livres; manter o mesmo projeto em subida, conferência, reinício e parada. Um clone
+com o mesmo basename reutilizaria o volume padrão. Não remover nem migrar dados.
+Apenas documentação e evidências; sem novas dependências ou comportamento de aplicação.
+Registrar em `plans/validacao.md` revisão, ambiente, volume novo, comandos, bateria,
+persistência, testes e limitações. Os pins, modelos e código existentes são preservados.

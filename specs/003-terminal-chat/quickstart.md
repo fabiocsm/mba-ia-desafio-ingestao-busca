@@ -170,15 +170,27 @@ imprimir vetores/credenciais. Não usar `down -v`, exclusão de collection ou li
 
 ## 6. Reprodução em ambiente novo
 
-Usar clone separado do candidato à entrega, revisão identificada, venv novo e somente
+Usar clone separado da entrega integrada em `main`, conforme o comando do README:
+
+```bash
+git clone https://github.com/fabiocsm/mba-ia-desafio-ingestao-busca.git
+cd mba-ia-desafio-ingestao-busca
+```
+
+Usar revisão identificada, venv novo e somente
 configuração documentada/credencial fornecida. Não copiar venv ou `.env.local` existente.
 Repetir a seção 1 e a ordem do README: criar/ativar venv → instalar → configurar →
 `docker compose up -d` → confirmar saúde/extensão → `python src/ingest.py` →
 `python src/chat.py`. Executar testes e ao menos a sessão com três perguntas.
 
 Para provar bootstrap novo com os comandos originais, usar máquina/contexto Docker
-limpo e porta 5432 disponível. Se validar no mesmo host com a base atual, manter essa
-base: criar projeto Compose separado e configuração de validação copiada, com
+limpo e porta 5432 disponível. Se houver volumes antigos, mas porta/nome de container
+estiverem livres, selecionar `COMPOSE_PROJECT_NAME` inédito conforme README; manter
+a variável em todos os comandos Compose, inclusive reinício/parada. Isso isola o
+volume sem alterar porta, Compose ou código-fonte. Registrar o nome e comprovar
+ausência do volume antes da primeira subida. Se validar no mesmo host com a base
+atual, manter essa base: criar projeto Compose separado e configuração de validação
+copiada, com
 `container_name` distinto, porta livre (por exemplo 55432, após conferir) e volume
 separado pelo nome do projeto. Registrar arquivo/alterações de configuração e comandos
 `docker compose -p ... -f ...`; ajustar DATABASE_URL local para a porta correspondente.
