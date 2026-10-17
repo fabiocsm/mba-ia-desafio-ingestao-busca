@@ -1,6 +1,6 @@
 # Plano de implementação: Chat no terminal e entrega reproduzível
 
-**Branch Git**: `main` (existente; nenhuma branch criada) | **Data**: 2026-10-16
+**Branch Git**: `main` no planejamento; entrega em `dev`, PR #1 | **Data**: 2026-10-16
 
 **Spec**: [spec.md](spec.md) | **Identificador Spec Kit**: `003-terminal-chat`
 
@@ -11,8 +11,10 @@ O setup foi executado com `SPECIFY_FEATURE=main` e diretório explícito; o sele
 persistido é o diretório, independente da branch Git.
 
 **Execução:** implementação e validação local registradas na seção 003 de
-[plans/validacao.md](../../plans/validacao.md); candidato público pendente. O texto
-a seguir preserva as decisões do planejamento.
+[plans/validacao.md](../../plans/validacao.md). T029/T034/T035 concluídas após conferir
+anonimamente a revisão pública `ace6549` em 2026-10-16; veja o
+[fechamento público](../../plans/validacao.md#fechamento-público-da-entrega-003).
+O texto a seguir preserva as decisões e os gates previstos no planejamento.
 
 ## Resumo
 

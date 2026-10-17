@@ -1,12 +1,14 @@
 # Feature Specification: Chat no terminal e entrega reproduzível
 
-**Feature Branch**: main (branch existente; nenhuma branch específica criada)
+**Feature Branch**: main no planejamento; implementação publicada em dev, PR #1
 
 **Feature Directory**: specs/003-terminal-chat
 
 **Created**: 2026-10-16
 
-**Status**: Implementada e verificada localmente — revisão pública do candidato pendente (T029)
+**Status**: Implementada e validada nos casos definidos — conferência pública de
+T029/T034/T035 concluída em 2026-10-16 para a revisão `ace6549` do PR #1.
+Evidências e limites no [fechamento da entrega](../../plans/validacao.md#fechamento-público-da-entrega-003).
 
 **Input**: User description: "Permitir que o usuário converse pelo terminal com a base do PDF,
 fazendo várias perguntas na mesma execução, recebendo respostas fundamentadas ou recusas,

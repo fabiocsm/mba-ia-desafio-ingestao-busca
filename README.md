@@ -1,5 +1,157 @@
 # Ingestão e Busca Semântica com LangChain e Postgres
 
+Aplicação Python para ingerir um PDF textual no PostgreSQL/pgVector e responder
+perguntas pelo terminal com LangChain e OpenAI. Cada pergunta usa até dez chunks
+recuperados; sem evidência suficiente, a resposta é
+`Não tenho informações necessárias para responder sua pergunta.`
+
+## Instalação e configuração da aplicação
+
+### 1. Pré-requisitos e código-fonte
+
+- Git, **CPython 3.12.12** e Docker com Docker Compose disponíveis no terminal.
+- Docker em execução, com a porta local **5432** e o nome de container
+  `postgres_rag` livres para o Compose deste projeto.
+- Chave OpenAI com acesso e quota para embeddings `text-embedding-3-small` e
+  chat `gpt-6-luna`, modelos usados na validação de 2026-10-16. Chamadas podem gerar
+  cobrança; disponibilidade e quota dependem da conta.
+- Um PDF com texto extraível; `document.pdf` já acompanha o repositório.
+
+O ambiente efetivamente validado foi macOS arm64 com CPython 3.12.12. Não há
+validação em Linux ou Windows. Os comandos abaixo usam Bash/Zsh.
+
+Obtenha o código-fonte e confira as ferramentas disponíveis:
+
+```bash
+git clone https://github.com/fabiocsm/mba-ia-desafio-ingestao-busca.git
+cd mba-ia-desafio-ingestao-busca
+python3 --version
+docker compose version
+```
+
+Confirme Python 3.12.12 antes de criar o ambiente. Se já usa `uv`, pode selecionar
+essa versão na sessão com:
+
+```bash
+uv python install 3.12.12
+export PATH="$(dirname "$(uv python find 3.12.12)"):$PATH"
+python3 --version
+```
+
+### 2. Ambiente virtual e dependências
+
+Execute da raiz do repositório:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python -m pip check
+```
+
+Use o ambiente virtual também nos comandos seguintes. As dependências são fixadas
+em `requirements.txt`; não é necessário instalar Spec Kit para executar a aplicação.
+
+### 3. Variáveis de ambiente
+
+Em um clone novo, copie o exemplo e edite `.env` localmente, preenchendo a chave
+OpenAI. Se `.env` já existir, preserve-o e revise seus valores.
+
+```bash
+cp -n .env.example .env
+```
+
+| Variável | Configuração | Exigida em |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | Sua chave OpenAI, preenchida somente localmente. | Ingestão e chat |
+| `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` | Ingestão e chat |
+| `OPENAI_EMBEDDING_DIMENSIONS` | Inteiro positivo; exemplo e padrão: `1536`. | Ingestão e chat |
+| `DATABASE_URL` | `postgresql+psycopg://postgres:postgres@localhost:5432/rag` para o Compose local. | Ingestão e chat |
+| `PG_VECTOR_COLLECTION_NAME` | `pdf_ingestion_validation_v1` no exemplo; use o mesmo destino nos dois fluxos. | Ingestão e chat |
+| `PDF_PATH` | `document.pdf`, relativo ao diretório de execução, ou caminho absoluto de um PDF textual. | Somente ingestão |
+| `OPENAI_CHAT_MODEL` | `gpt-6-luna` | Somente busca/chat |
+
+A precedência é **ambiente exportado > `.env.local` > `.env`**, inclusive quando um
+valor exportado está vazio. `.env` e `.env.local` são lidos na raiz do projeto;
+o complemento `.env.local` pode conter apenas a chave. `.env.example` não é carregado
+automaticamente. Os arquivos locais são ignorados pelo Git; não os versione.
+
+Esta implementação usa somente OpenAI. A ingestão não exige modelo de chat nem
+chave Google. Após ingerir a base, o chat não exige `PDF_PATH` ou o arquivo original.
+A senha `postgres` acima é a configuração de exemplo do banco local.
+
+### 4. PostgreSQL e extensão vector
+
+```bash
+docker compose up -d
+docker compose ps -a
+docker compose logs bootstrap_vector_ext
+docker compose exec -T postgres psql -U postgres -d rag -c "SELECT extversion FROM pg_extension WHERE extname='vector';"
+```
+
+Antes de ingerir, confirme `postgres` saudável (`healthy`),
+`bootstrap_vector_ext` encerrado com código 0 e uma versão retornada pela consulta
+da extensão. Se o serviço ainda estiver iniciando, aguarde e repita a conferência.
+O volume `postgres_data` preserva os dados entre reinícios.
+
+### 5. Ingestão e chat
+
+```bash
+python src/ingest.py
+python src/chat.py
+```
+
+Só inicie o chat após a ingestão terminar com código 0 e informar os chunks
+confirmados. Na validação do PDF fornecido foram carregadas 34 páginas e persistidos
+67 chunks; outro PDF pode produzir quantidades diferentes.
+
+Exemplo registrado na bateria real, com evidência na página 1 do PDF:
+
+```text
+PERGUNTA: Qual o faturamento da Alfa Agronegócio Indústria?
+RESPOSTA: R$ 85.675.568,77
+
+PERGUNTA: Qual é o CNPJ da Alfa Agronegócio Indústria?
+RESPOSTA: Não tenho informações necessárias para responder sua pergunta.
+
+PERGUNTA: sair
+```
+
+Use `sair`, `exit`, EOF ou Ctrl+C para encerrar normalmente. Perguntas vazias são
+ignoradas; cada pergunta é independente, sem memória de conversa. Erros operacionais
+aparecem em stderr e falhas fatais retornam código 1. Consulte os diagnósticos abaixo.
+
+Para retomar em outra sessão, ative o venv e inicie o chat com o banco saudável;
+não é necessário reingerir. Para parar o banco preservando o volume:
+
+```bash
+docker compose stop
+deactivate
+```
+
+### 6. Testes, evidências e limites
+
+```bash
+python -m unittest discover -s tests -v
+python -m compileall -q src tests
+python -m pip check
+```
+
+Os 78 testes isolados executam sem API, credenciais reais ou PostgreSQL ativo.
+O [relatório de validação](plans/validacao.md#fechamento-público-da-entrega-003)
+registra a conferência pública de T029/T034/T035, a matriz R01–R11 e as evidências
+anteriores de integração, reprodução e persistência.
+
+O escopo é um PDF textual, um provedor e chat por terminal; não inclui OCR, web,
+múltiplos PDFs ou histórico. Trocar PDF, modelo de embeddings, dimensão ou pipeline
+exige nova collection explícita e ingestão integral, preservando a anterior. A bateria
+aprovada não garante ausência absoluta de alucinações. Nenhum fluxo normal apaga dados.
+
+## Enunciado do desafio
+
+Os requisitos e exemplos originais abaixo são preservados como referência acadêmica.
+Para operar a implementação, siga a instalação acima e os diagnósticos ao final.
+
 ## Objetivo
 
 Você deve entregar um software capaz de:
@@ -197,67 +349,16 @@ Referências: [adoção em projetos existentes](https://github.github.io/spec-ki
 ## Solução implementada — ingestão, busca e chat (specs 001/002/003)
 
 A ingestão, a cadeia programática de busca e o chat interativo estão implementados.
-A entrega global depende das verificações registradas na seção 003 do relatório;
-os exemplos do enunciado só são evidência quando conferidos na validação real. Consulte [o registro de execução](plans/validacao.md) para resultados reais.
+O candidato publicado na revisão `ace6549` do PR #1 foi conferido anonimamente em
+2026-10-16; T029/T034/T035 foram concluídas conforme o
+[fechamento público](plans/validacao.md#fechamento-público-da-entrega-003).
+Os exemplos do enunciado só são evidência quando conferidos na validação real.
 
-Ambiente validado: **CPython 3.12.12**, macOS arm64, Docker e Compose.
-Confirme `python3 --version` antes de criar o ambiente. Se usa `uv`, selecione
-3.12.12 com `uv python install 3.12.12` e acrescente o diretório de
-`uv python find 3.12.12` ao início do PATH da sessão.
-
-Da raiz do repositório:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python -m pip check
-# Somente se .env ainda não existir:
-cp .env.example .env
-```
-
-Preencha `OPENAI_API_KEY` em `.env`, `.env.local` ou ambiente exportado.
-O complemento `.env.local` pode conter só a chave. Precedência: ambiente exportado
-(inclusive vazio) > `.env.local` > `.env`. Os arquivos locais são ignorados pelo Git;
-não os imprima nem versione. A configuração não altera esses arquivos.
-
-| Variável | Uso na ingestão |
-| --- | --- |
-| `OPENAI_API_KEY` | Chave OpenAI não vazia. |
-| `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small`, disponível à conta. |
-| `OPENAI_EMBEDDING_DIMENSIONS` | Inteiro positivo, padrão 1536, enviado explicitamente. |
-| `DATABASE_URL` | URL `postgresql+psycopg://` do exemplo para o Compose local. |
-| `PG_VECTOR_COLLECTION_NAME` | Destino explícito, uma revisão de um PDF por collection. |
-| `PDF_PATH` | PDF textual local; exemplo `document.pdf`, relativo ao diretório de execução. |
-
-A ingestão não exige modelo de chat nem chave Google. Não há pressuposto de gratuidade:
-verifique acesso e quota no provedor. A [documentação oficial de embeddings](https://developers.openai.com/api/docs/guides/embeddings)
-e [do modelo](https://developers.openai.com/api/docs/models/text-embedding-3-small)
-fundamentam a escolha; a integração efetiva consta do registro de validação.
-
-```bash
-docker compose up -d
-docker compose ps -a
-docker compose exec -T postgres psql -U postgres -d rag -c "SELECT extversion FROM pg_extension WHERE extname='vector';"
-python src/ingest.py
-```
-
-Antes da ingestão, `postgres` deve estar saudável, o bootstrap deve terminar com
-código 0 e a consulta deve retornar uma versão de `vector`. Sucesso da aplicação tem
-código 0 e informa arquivo, páginas carregadas, chunks confirmados e collection.
-A conferência completa de texto, metadados, IDs e dimensões é feita após a escrita.
+Siga [instalação e configuração](#instalação-e-configuração-da-aplicação) para preparar
+o ambiente e executar a aplicação. A conferência de texto, metadados, IDs e dimensões
+é feita após a escrita.
 Consulte [o quickstart](specs/001-pdf-ingestion/quickstart.md) para consultas SQL
 somente de leitura, delimitadas pelo nome da collection, e amostras por página.
-
-Configure também `OPENAI_CHAT_MODEL=gpt-6-luna` para executar `python src/chat.py`.
-A chave Google e `PDF_PATH` não são exigidos pelo chat.
-
-Testes isolados (não usam chave real, rede ou PostgreSQL):
-
-```bash
-python -m unittest discover -s tests -v
-python -m compileall -q src tests
-```
 
 ### Diagnóstico de ingestão
 
@@ -405,7 +506,7 @@ python -m unittest tests.test_chat -v
 
 O [guia 003](specs/003-terminal-chat/quickstart.md) contém bateria factual, interrupções,
 persistência e reprodução nova. A [seção 003 de validação](plans/validacao.md#validação--chat-no-terminal-e-entrega-003)
-distingue resultados executados, dublês e pendências da entrega pública. Sucesso dos
+distingue resultados executados, dublês e a conferência da revisão pública. Sucesso dos
 testes não garante ausência absoluta de alucinações. Custos, timeouts e tracing seguem
 as configurações da busca descritas acima, sem novas variáveis da CLI.
 
@@ -415,5 +516,6 @@ Resultados reais da CLI em 2026-10-16: faturamento da Alfa Agronegócio Indústr
 faturamento da SuperTechIABrazil `R$ 10.000.000,00` (página 3). Três ausências, opinião
 e desvio retornaram a recusa exata. A reprodução em clone/venv/banco novos e a persistência
 também passaram; o relatório registra a variação local de Compose com porta/volume
-separados. **A entrega pública do candidato ainda está pendente (T029)**; o repositório
-é público e o fork está correto, mas a revisão pública conferida não contém este código.
+separados. A revisão pública `ace6549` contém os mesmos arquivos de execução e testes
+do candidato validado; a conferência de acesso, fork, estrutura e credenciais consta
+do fechamento público de T029/T034/T035 no relatório.

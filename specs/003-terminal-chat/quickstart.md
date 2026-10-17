@@ -2,8 +2,9 @@
 
 **Estado:** CLI implementada. Em 2026-10-16, 78 testes isolados, bateria real,
 interrupções, persistência e reprodução em clone/venv/banco novos passaram. A revisão
-pública do candidato continua pendente; consulte a seção 003 de
-[plans/validacao.md](../../plans/validacao.md) para comandos, identidade e limites.
+pública `ace6549` foi conferida anonimamente e T029/T034/T035 foram concluídas;
+consulte o [fechamento público](../../plans/validacao.md#fechamento-público-da-entrega-003)
+para comandos, identidade, limites e relação com as evidências de integração anteriores.
 
 Contrato de referência: [terminal-chat.md](contracts/terminal-chat.md).
 Dados/estados/evidências: [data-model.md](data-model.md).
@@ -224,6 +225,9 @@ credencial e overrides documentados pelo ambiente. Ingestão nova de 67 chunks, 
 verificadores e persistência após reinício passaram. A variação de infraestrutura foi
 registrada, sem editar fonte nem remover volumes. Linux não foi testado.
 
-O repositório público e parent do fork foram confirmados anonimamente, porém o código
-desta implementação ainda está local. T029/SC-007/R11 exigem repetir a conferência após
-a revisão candidata estar disponível publicamente; não declarar a entrega global validada.
+O repositório público, o parent do fork e a revisão `ace6549` do PR #1 foram confirmados
+anonimamente. Os 76 arquivos do arquivo público coincidem com os objetos Git da revisão;
+os oito hashes do candidato validado coincidem, incluindo execução, testes, pins e PDF.
+T029/T034/T035, FR-013/SC-007/R11 foram concluídos com evidências no relatório.
+Para obter e executar a implementação, siga o clone e a instalação descritos no
+[README](../../README.md#instalação-e-configuração-da-aplicação).

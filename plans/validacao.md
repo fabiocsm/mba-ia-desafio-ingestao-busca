@@ -1,6 +1,8 @@
 # Validação — ingestão de PDF (001)
 
-Data: 2026-10-16. Escopo: spec 001; busca/chat e entrega global pendentes nas specs 002/003.
+Data: 2026-10-16. Esta primeira seção preserva o registro histórico da spec 001.
+O estado atual das specs 001/002/003 e o fechamento de T029/T034/T035 constam em
+[Fechamento público da entrega 003](#fechamento-público-da-entrega-003).
 
 ## Análise documental anterior à implementação
 
@@ -1060,6 +1062,9 @@ agora executados; não alteram código/configuração/dependências da reproduç
 
 ## Conferência pública e segredos (T029 — pendente)
 
+Retrato histórico anterior à publicação do candidato. O bloqueio descrito abaixo foi
+resolvido pela conferência da revisão `ace6549` no fechamento ao final deste relatório.
+
 Métodos: gh repo view --json url,isPrivate,isFork,parent,defaultBranchRef;
 git ls-remote HTTPS e GETs HTTP sem Authorization/cookies para API GitHub e raw do chat.
 API anônima retornou 200. URL: [fabiocsm/mba-ia-desafio-ingestao-busca](https://github.com/fabiocsm/mba-ia-desafio-ingestao-busca).
@@ -1081,6 +1086,10 @@ não é prova de ausência de qualquer formato de segredo ou de refs remotas nã
 A inspeção final da revisão efetivamente publicada continua parte de T029.
 
 ## Gate final e matriz consolidada (T030–T032)
+
+Retrato histórico da validação local: as pendências públicas desta matriz foram
+resolvidas no fechamento de T029/T034/T035, registrado ao final. Os resultados de
+comportamento e as limitações abaixo permanecem como evidência da execução original.
 
 Após código e documentação de uso finais, executados da raiz, todos código 0:
 
@@ -1189,3 +1198,146 @@ converge para despachar. Checklists não foram alteradas e seleção ativa perma
 segredo, alteração em configuração local ou dependência nova adicionado.
 
 Após as verificações, `docker compose -p rag_terminal_003 -f /tmp/codex-terminal-003/candidate/compose.validation.yml stop` retornou 0: somente os containers isolados da 003 foram parados; o volume novo foi preservado, e o banco original continuou saudável.
+
+
+## Fechamento público da entrega 003
+
+Data: **2026-10-16**, America/Sao_Paulo. Escopo: T029/T034/T035,
+FR-008/FR-013/FR-014, SC-005/SC-007, US3/AC3–AC4 e R10/R11.
+As seções anteriores preservam os estados observados durante a implementação;
+esta seção substitui os avisos anteriores de candidato apenas local.
+
+### Revisão, acesso anônimo e comparação com o candidato
+
+Repositório: [fabiocsm/mba-ia-desafio-ingestao-busca](https://github.com/fabiocsm/mba-ia-desafio-ingestao-busca).
+Entrega publicada: [PR #1](https://github.com/fabiocsm/mba-ia-desafio-ingestao-busca/pull/1),
+branch `dev`, revisão **`ace6549aaeb7559316607918cbffeee7d06a765f`**.
+Checkout local antes desta rodada: `32d3826`, com apenas uma correção de whitespace
+em `specs/002-grounded-search/plan.md` além da revisão pública. Nenhum código de
+execução, teste, dependência ou PDF difere entre essas duas revisões.
+
+Executado `venv/bin/python` com `urllib.request`, timeout de 30 segundos por GET,
+sem cabeçalho Authorization nem Cookie, usando apenas User-Agent e Accept públicos:
+
+| Recurso consultado | HTTP | Resultado |
+| --- | --- | --- |
+| `https://api.github.com/repos/fabiocsm/mba-ia-desafio-ingestao-busca` | 200 | `private=false`, `fork=true`, parent `devfullcycle/mba-ia-desafio-ingestao-busca`. |
+| `https://api.github.com/repos/fabiocsm/mba-ia-desafio-ingestao-busca/pulls/1` | 200 | PR aberto; head `dev` em `ace6549aaeb7559316607918cbffeee7d06a765f`. |
+| `https://codeload.github.com/fabiocsm/mba-ia-desafio-ingestao-busca/tar.gz/ace6549aaeb7559316607918cbffeee7d06a765f` | 200 | 76 arquivos regulares, lidos em memória sem extração. |
+| `https://raw.githubusercontent.com/fabiocsm/mba-ia-desafio-ingestao-busca/ace6549aaeb7559316607918cbffeee7d06a765f/src/chat.py` | 200 | Bytes e SHA-256 coincidem com o candidato validado. |
+| `https://raw.githubusercontent.com/fabiocsm/mba-ia-desafio-ingestao-busca/ace6549aaeb7559316607918cbffeee7d06a765f/tests/test_chat.py` | 200 | Bytes e SHA-256 coincidem com o candidato validado. |
+
+Método de comparação: listar os arquivos com
+`git ls-tree -r --name-only ace6549aaeb7559316607918cbffeee7d06a765f` e comparar
+cada entrada do arquivo público com `git show <revisão>:<caminho>` por bytes.
+Resultado: **76/76 idênticos, zero divergências**. Conferidos os oito arquivos
+obrigatórios do enunciado e `tests/test_chat.py`: **9/9 presentes**.
+
+Os oito SHA-256 da seção **Identidade do código candidato executado** coincidem com
+os arquivos públicos: `src/chat.py`, `tests/test_chat.py`, `src/search.py`,
+`src/config.py`, `src/vector_store.py`, `src/ingest.py`, `requirements.txt` e
+`document.pdf`. Assim, as evidências anteriores de integração e reprodução se
+aplicam à implementação publicada, sem presumir equivalência apenas pelo nome da branch.
+
+No momento da conferência, a branch padrão pública `main` ainda continha o enunciado
+original. Por orientação posterior do responsável, que realizará o merge, o README
+usa `git clone` sem selecionar branch para a entrega integrada. Esta edição documental
+não executou nem comprovou o merge; a evidência pública acima permanece vinculada
+à revisão exata conferida. Não houve alteração de visibilidade nesta rodada.
+
+### Estrutura, configuração e inspeção de credenciais
+
+Conferidos `.env.example`, `.gitignore`, `.dockerignore`, Compose e os 76 arquivos
+publicados. `.env.example` contém as sete variáveis usadas pela aplicação, com chave
+vazia e valores de exemplo coerentes com a configuração. A senha `postgres` do
+Compose é exemplo local, distinguida de uma chave real de provedor.
+
+Executados `git rev-list --objects --all ace6549aaeb7559316607918cbffeee7d06a765f`
+e `git cat-file --batch`: **120 blobs** do histórico alcançável local, incluindo a
+revisão pública, inspecionados por padrões de tokens OpenAI/Google/GitHub e cabeçalhos
+de chaves privadas. Comparação adicional com valores de API_KEY/TOKEN dos arquivos
+locais, somente em memória, sem imprimir valores. Resultado: **zero correspondências**.
+
+`git ls-files .env .env.local venv .venv`: nenhuma entrada.
+`git check-ignore .env .env.local venv/x .venv/x`: quatro caminhos ignorados.
+Nenhum arquivo local de ambiente ou venv consta na árvore publicada. O método cobre
+os padrões conhecidos, os valores locais comparados e o histórico alcançável;
+não prova ausência de todo formato de segredo nem abrange refs remotas não obtidas.
+
+### Documentação e verificadores
+
+README atualizado com pré-requisitos, obtenção do código-fonte, seleção do Python,
+venv, dependências fixadas, todas as variáveis e sua precedência, configuração por
+fluxo, saúde/bootstrap/vector, ingestão, chat, exemplo factual/recusa, encerramento,
+preservação do volume, testes e limites. Enunciado e prompt obrigatório preservados.
+Status de spec/plan/quickstart sincronizados e tarefas marcadas pela execução de
+implementação, fora da rotina de convergência.
+
+Verificadores executados com CPython **3.12.12**, macOS arm64 e pins existentes:
+
+| Comando | Resultado |
+| --- | --- |
+| `venv/bin/python -m unittest discover -s tests -v` | 78 testes aprovados; código 0. |
+| `venv/bin/python -m compileall -q src tests` | Código 0. |
+| `venv/bin/python -m pip check` | Nenhuma dependência quebrada; código 0. |
+| `docker compose config --quiet` | Configuração válida; código 0. |
+| `git diff --check` e `git diff --check origin/main` | Código 0, incluindo a correção documental local já existente. |
+
+Conferência documental por Python: enunciado original e prompt obrigatório
+preservados, 44 links locais com destino existente, blocos Markdown balanceados,
+35 tarefas concluídas e checklist de requisitos 16/16, sem alterar seus marcadores.
+
+Nenhuma nova chamada ao provedor ou gravação no banco foi necessária: somente
+documentação mudou, e os hashes acima preservam a aplicabilidade das provas reais.
+Não se atribui a esta rodada uma nova reprodução integral ou uma nova bateria paga.
+
+### Matriz atual de aceite
+
+| Requisito | Resultado atual | Evidência aplicável |
+| --- | --- | --- |
+| R01 | Aprovado no ambiente validado | Instalação nova da 003/T027–T028; pins idênticos; 78 testes e pip check nesta rodada. |
+| R02 | Aprovado | Bootstrap/vector e banco novo na 003/T021/T026–T028; Compose público idêntico. |
+| R03 | Aprovado | PDF textual e rejeições na 001/US1–US2, aplicáveis por 003/T025; PDF público com hash idêntico. |
+| R04 | Aprovado | Splitter 1000/150/len e metadados na 001/US1 e suíte atual; ingestão/configuração idênticas. |
+| R05 | Aprovado | 001/T019/T033–T035 e 003/T025–T028: 67 chunks, vetores, IDs, manifesto e persistência. |
+| R06 | Aprovado | 002/US1–US2, 003/T010/T019/T022 e suíte atual: embedding compatível e k=10. |
+| R07 | Aprovado | 002/US1–US2, 003/T022 e teste atual: prompt obrigatório e geração; código público idêntico. |
+| R08 | Aprovado nos casos definidos | 002/P1–A1/C1–C4 e 003/T022: três fatos, três ausências, opinião e desvio; mesmas fontes/configuração. |
+| R09 | Aprovado | 003/T005–T019/T022–T024/T026/T028: laço, saídas, erros e recursos; chat/testes públicos com hashes idênticos. |
+| R10 | Aprovado no ambiente validado | 003/T027–T028: comandos em clone/venv/banco novos; nove arquivos conferidos anonimamente nesta rodada. |
+| R11 | Aprovado na revisão pública conferida | README público com instalação/configuração/uso; fork e acesso anônimo confirmados; estrutura e credenciais inspecionadas em T029/T034/T035. |
+
+| Item 003 antes pendente | Resultado atual | Evidência de fechamento |
+| --- | --- | --- |
+| FR-008 | Aprovado no escopo inspecionado | Provas anteriores de sanitização e inspeção de 120 blobs incluindo revisão pública. |
+| FR-013 / US3-AC4 | Aprovado | Fork, revisão pública exata, estrutura e inspeção de credenciais acima. |
+| FR-014 | Aprovado | Bloqueios históricos preservados; itens concluídos somente após prova; limites e origem das evidências explícitos. |
+| SC-005 / US3-AC3 | Aprovado | Matriz R01–R11 consolidada com resultados e referências por revisão. |
+| SC-007 | Aprovado | Acesso anônimo HTTP 200 e identidade do candidato publicado. |
+
+Os demais FR/SC mantêm os resultados e limites da matriz histórica T030–T032,
+pois não houve alteração de comportamento. T029/T034/T035 concluídas: **35/35 tarefas**.
+No encerramento desta conferência, as alterações documentais ainda estavam locais;
+a revisão pública comprovada acima é `ace6549`, que já contém a implementação e
+instruções suficientes para executar. A publicação posterior da documentação é
+rastreável pelos commits do PR. Merge do PR não é requisito dessas tarefas.
+
+### Convergência final
+
+Executada a skill local `speckit-converge` após o fechamento pela execução de
+`speckit-implement`. Pré-requisitos resolveram `specs/003-terminal-chat` e todos os
+artefatos requeridos. Conferidos **15 FR, sete SC, 17 cenários de aceite, oito
+decisões principais do plano e oito princípios constitucionais**, com código,
+contratos, testes e evidências delimitados pelo plano da 003.
+
+Resultado: **converged**, zero lacunas `missing`, `partial`, `contradicts` ou
+`unrequested`; nenhuma tarefa acrescentada. `tasks.md` permaneceu byte a byte
+inalterado durante a convergência, após a marcação dos três itens pela implementação.
+SHA-256 após essa marcação: `1fba8c8bfd5ab658875c8ea980cbc404a17d5d2ec2384af5ee2945fb2409e3e8`.
+`.specify/extensions.yml` ausente: nenhum hook before/after_implement ou
+before/after_converge registrado para executar. Checklist de requisitos não alterada.
+
+A conclusão mantém os limites demonstrados: macOS arm64/CPython 3.12.12, um PDF,
+OpenAI, falhas do provedor exercitadas por dublês e ausência de garantia universal
+contra alucinação ou injeção. As provas de integração/reprodução referenciadas não
+foram apresentadas como novas execuções desta rodada documental.
